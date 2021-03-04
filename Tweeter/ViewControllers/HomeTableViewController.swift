@@ -9,8 +9,9 @@ import UIKit
 class HomeTableViewController: UITableViewController {
 	var tweetArray: [NSDictionary] = []
 	var numberOfTweets: Int!
-	var oldestTweetInTable: Int!
+	var oldestTweetInTable = -1
 	let myRefreshControl = UIRefreshControl()
+	var noMoreTweets = false
 
 	override func viewDidLoad() {
 		super.viewDidLoad()
@@ -42,11 +43,17 @@ class HomeTableViewController: UITableViewController {
 		) as! TweetTableViewCell
 		let tweet = tweetArray[indexPath.row]
 		let user = tweet["user"] as! NSDictionary
-		cell.usernameLabel.text = user["screen_name"] as? String
+		cell.usernameLabel.text = user["name"] as? String
 		cell.tweetLabel.text = tweet["text"] as? String
 		cell.setFavorite(tweet["favorited"] as! Bool)
 		cell.setRetweet(tweet["retweeted"] as! Bool)
 		cell.tweetID = tweet["id"] as! Int
+
+		let screennameLabel = "@" + (user["screen_name"] as! String)
+		let fullDatePostedLabel = tweet["created_at"] as! String
+		let dateArray = fullDatePostedLabel.split(separator: " ")
+			let datePostedLabel = " | " + dateArray[1] + " " + dateArray[2]
+		cell.infoLabel.text = String(screennameLabel + datePostedLabel)
 
 		let imageURL = URL(string: (user["profile_image_url_https"] as? String)!)
 		let data = try? Data(contentsOf: imageURL!)
@@ -74,7 +81,7 @@ class HomeTableViewController: UITableViewController {
 		willDisplay cell: UITableViewCell,
 		forRowAt indexPath: IndexPath
 	) {
-		if indexPath.row + 1 == tweetArray.count {
+		if indexPath.row + 1 == tweetArray.count && !noMoreTweets {
 			loadMoreTweets()
 		}
 	}
@@ -104,16 +111,21 @@ class HomeTableViewController: UITableViewController {
 
 	func loadMoreTweets() {
 		let APIURL = "https://api.twitter.com/1.1/statuses/home_timeline.json"
-		let params = ["count": numberOfTweets!, "max_id": oldestTweetInTable!, "include_entities": true] as [String: Any]
+		let params = ["count": numberOfTweets!, "max_id": oldestTweetInTable, "include_entities": true] as [String: Any]
 		TwitterAPICaller.client?.getDictionariesRequest(
 			url: APIURL,
 			parameters: params,
 			success: { (tweets: [NSDictionary]) in
+				let lastTweet = tweets.last!
+				if lastTweet["id"] as! Int == self.oldestTweetInTable {
+					self.noMoreTweets = true
+					self.tableView.refreshControl?.endRefreshing()
+					return
+				}
 				for tweet in tweets {
 					self.tweetArray.append(tweet)
 				}
 				self.tableView.reloadData()
-				let lastTweet = tweets.last!
 				self.oldestTweetInTable = (lastTweet["id"] as! Int)
 			}, failure: { error in
 				print(error.localizedDescription)
