@@ -33,6 +33,6 @@ Created For: CodePath - iOS Development
 
 #### Bonus
 
-- [x] (2pts) When composing a tweet, user sees a countdown for the number of characters remaining for the tweet (out of 280)
+- [x] (2pts) When composing a tweet, user sees a countdown for the number of characters remaining for the tweet (out of 280).
 - [x] (3pts) User can view their profile in a profile tab.
 - [x] (3pts) User sees embedded images in tweet if available.
